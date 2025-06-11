@@ -5,6 +5,21 @@ import { type CreateAudioInput, type AudioClip } from '../schema';
 
 export const createAudio = async (input: CreateAudioInput): Promise<AudioClip> => {
   try {
+    // TODO: Integrate real AI audio generation model here
+    // This is where you would call an AI service like:
+    // - OpenAI's audio generation API
+    // - ElevenLabs API
+    // - Mubert API
+    // - Or a custom trained model
+    // Example integration:
+    // const audioGenerationResult = await aiService.generateAudio({
+    //   prompt: input.prompt,
+    //   duration: 30, // seconds
+    //   format: 'mp3'
+    // });
+    // const audioUrl = audioGenerationResult.url;
+    // const actualDuration = audioGenerationResult.duration;
+    
     // Generate mock audio URL and duration based on prompt
     const audioUrl = `https://audio-storage.example.com/clips/${Date.now()}-${Math.random().toString(36).substring(7)}.mp3`;
     
