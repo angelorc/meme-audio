@@ -2,6 +2,9 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Wand2 } from 'lucide-react';
@@ -17,6 +20,8 @@ interface AudioGeneratorProps {
 export function AudioGenerator({ onAudioCreated, isLoading, setIsLoading }: AudioGeneratorProps) {
   const [prompt, setPrompt] = useState('');
   const [charCount, setCharCount] = useState(0);
+  const [modelName, setModelName] = useState('');
+  const [apiKey, setApiKey] = useState('');
 
   const handlePromptChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value;
@@ -26,15 +31,21 @@ export function AudioGenerator({ onAudioCreated, isLoading, setIsLoading }: Audi
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!prompt.trim() || isLoading) return;
+    if (!prompt.trim() || !modelName || isLoading) return;
 
     setIsLoading(true);
     try {
-      const input: CreateAudioInput = { prompt: prompt.trim() };
+      const input: CreateAudioInput = { 
+        prompt: prompt.trim(),
+        modelName: modelName,
+        apiKey: apiKey.trim() || undefined
+      };
       const newAudio = await trpc.createAudio.mutate(input);
       onAudioCreated(newAudio);
       setPrompt('');
       setCharCount(0);
+      setModelName('');
+      setApiKey('');
     } catch (error) {
       console.error('Failed to create audio:', error);
     } finally {
@@ -42,7 +53,7 @@ export function AudioGenerator({ onAudioCreated, isLoading, setIsLoading }: Audi
     }
   };
 
-  const isValid = prompt.trim().length > 0 && prompt.length <= 500;
+  const isValid = prompt.trim().length > 0 && prompt.length <= 500 && modelName.length > 0;
 
   return (
     <Card className="border-2 border-dashed border-purple-200 bg-white/50 backdrop-blur-sm">
@@ -58,7 +69,9 @@ export function AudioGenerator({ onAudioCreated, isLoading, setIsLoading }: Audi
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
+            <Label htmlFor="prompt">Audio Description</Label>
             <Textarea
+              id="prompt"
               placeholder="e.g., A dramatic chipmunk saying 'This is fine' while everything is on fire..."
               value={prompt}
               onChange={handlePromptChange}
@@ -75,6 +88,37 @@ export function AudioGenerator({ onAudioCreated, isLoading, setIsLoading }: Audi
                 {charCount}/500 characters
               </Badge>
             </div>
+          </div>
+
+          <div>
+            <Label htmlFor="model">AI Model</Label>
+            <Select value={modelName} onValueChange={setModelName} disabled={isLoading}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select an AI model..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="elevenlabs-v1">ElevenLabs V1</SelectItem>
+                <SelectItem value="elevenlabs-v2">ElevenLabs V2</SelectItem>
+                <SelectItem value="google-tts">Google Text-to-Speech</SelectItem>
+                <SelectItem value="azure-tts">Azure Text-to-Speech</SelectItem>
+                <SelectItem value="openai-tts">OpenAI TTS</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Label htmlFor="apiKey">API Key (Optional)</Label>
+            <Input
+              id="apiKey"
+              type="password"
+              placeholder="Enter your API key (if required)..."
+              value={apiKey}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setApiKey(e.target.value)}
+              disabled={isLoading}
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              ⚠️ API keys are handled securely but consider using backend-managed keys for production
+            </p>
           </div>
           
           <Button 

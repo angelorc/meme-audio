@@ -9,7 +9,8 @@ import { eq } from 'drizzle-orm';
 
 // Simple test input
 const testInput: CreateAudioInput = {
-  prompt: 'Generate a soothing nature sound with birds chirping'
+  prompt: 'Generate a soothing nature sound with birds chirping',
+  modelName: 'test-model'
 };
 
 describe('createAudio', () => {
@@ -21,7 +22,7 @@ describe('createAudio', () => {
 
     // Basic field validation
     expect(result.prompt).toEqual('Generate a soothing nature sound with birds chirping');
-    expect(result.audio_url).toMatch(/^https:\/\/audio-storage\.example\.com\/clips\/\d+-[a-z0-9]+\.mp3$/);
+    expect(result.audio_url).toMatch(/^https:\/\/mock-audio-storage\.example\.com\/clips\/test-model-\d+-[a-z0-9]+\.mp3$/);
     expect(typeof result.duration).toBe('number');
     expect(result.duration).toBeGreaterThan(0);
     expect(result.id).toBeDefined();
@@ -39,7 +40,7 @@ describe('createAudio', () => {
 
     expect(audioClips).toHaveLength(1);
     expect(audioClips[0].prompt).toEqual('Generate a soothing nature sound with birds chirping');
-    expect(audioClips[0].audio_url).toMatch(/^https:\/\/audio-storage\.example\.com\/clips\/\d+-[a-z0-9]+\.mp3$/);
+    expect(audioClips[0].audio_url).toMatch(/^https:\/\/mock-audio-storage\.example\.com\/clips\/test-model-\d+-[a-z0-9]+\.mp3$/);
     expect(audioClips[0].duration).toBeGreaterThan(0);
     expect(audioClips[0].created_at).toBeInstanceOf(Date);
   });
@@ -54,11 +55,13 @@ describe('createAudio', () => {
 
   it('should handle different prompt lengths', async () => {
     const shortPrompt: CreateAudioInput = {
-      prompt: 'Hi'
+      prompt: 'Hi',
+      modelName: 'test-model'
     };
 
     const longPrompt: CreateAudioInput = {
-      prompt: 'This is a very long prompt that should generate a longer estimated duration for the audio clip because it contains many more characters than a short prompt'
+      prompt: 'This is a very long prompt that should generate a longer estimated duration for the audio clip because it contains many more characters than a short prompt',
+      modelName: 'test-model'
     };
 
     const shortResult = await createAudio(shortPrompt);
@@ -72,7 +75,8 @@ describe('createAudio', () => {
 
   it('should handle maximum length prompt', async () => {
     const maxLengthPrompt: CreateAudioInput = {
-      prompt: 'A'.repeat(500) // Maximum allowed length
+      prompt: 'A'.repeat(500), // Maximum allowed length
+      modelName: 'test-model'
     };
 
     const result = await createAudio(maxLengthPrompt);
@@ -80,6 +84,48 @@ describe('createAudio', () => {
     expect(result.prompt).toEqual(maxLengthPrompt.prompt);
     expect(result.prompt.length).toEqual(500);
     expect(result.duration).toBeGreaterThan(0);
-    expect(result.audio_url).toMatch(/^https:\/\/audio-storage\.example\.com\/clips\/\d+-[a-z0-9]+\.mp3$/);
+    expect(result.audio_url).toMatch(/^https:\/\/mock-audio-storage\.example\.com\/clips\/test-model-\d+-[a-z0-9]+\.mp3$/);
+  });
+
+  it('should incorporate model name into generated URL', async () => {
+    const inputWithElevenLabs: CreateAudioInput = {
+      prompt: 'Test prompt',
+      modelName: 'elevenlabs-v1'
+    };
+
+    const inputWithGoogle: CreateAudioInput = {
+      prompt: 'Test prompt',
+      modelName: 'google-tts'
+    };
+
+    const result1 = await createAudio(inputWithElevenLabs);
+    const result2 = await createAudio(inputWithGoogle);
+
+    expect(result1.audio_url).toContain('elevenlabs-v1');
+    expect(result2.audio_url).toContain('google-tts');
+    expect(result1.audio_url).toMatch(/^https:\/\/mock-audio-storage\.example\.com\/clips\/elevenlabs-v1-\d+-[a-z0-9]+\.mp3$/);
+    expect(result2.audio_url).toMatch(/^https:\/\/mock-audio-storage\.example\.com\/clips\/google-tts-\d+-[a-z0-9]+\.mp3$/);
+  });
+
+  it('should handle optional apiKey parameter', async () => {
+    const inputWithApiKey: CreateAudioInput = {
+      prompt: 'Test prompt with API key',
+      modelName: 'test-model',
+      apiKey: 'test-api-key-123'
+    };
+
+    const inputWithoutApiKey: CreateAudioInput = {
+      prompt: 'Test prompt without API key',
+      modelName: 'test-model'
+    };
+
+    const result1 = await createAudio(inputWithApiKey);
+    const result2 = await createAudio(inputWithoutApiKey);
+
+    // Both should succeed regardless of apiKey presence
+    expect(result1.prompt).toEqual('Test prompt with API key');
+    expect(result2.prompt).toEqual('Test prompt without API key');
+    expect(result1.audio_url).toMatch(/^https:\/\/mock-audio-storage\.example\.com\/clips\/test-model-\d+-[a-z0-9]+\.mp3$/);
+    expect(result2.audio_url).toMatch(/^https:\/\/mock-audio-storage\.example\.com\/clips\/test-model-\d+-[a-z0-9]+\.mp3$/);
   });
 });

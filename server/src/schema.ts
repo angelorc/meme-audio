@@ -14,7 +14,9 @@ export type AudioClip = z.infer<typeof audioClipSchema>;
 
 // Input schema for creating audio clips
 export const createAudioInputSchema = z.object({
-  prompt: z.string().min(1, "Prompt cannot be empty").max(500, "Prompt must be 500 characters or less")
+  prompt: z.string().min(1, "Prompt cannot be empty").max(500, "Prompt must be 500 characters or less"),
+  modelName: z.string().min(1, "Model name cannot be empty"),
+  apiKey: z.string().optional()
 });
 
 export type CreateAudioInput = z.infer<typeof createAudioInputSchema>;
